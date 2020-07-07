@@ -37,12 +37,7 @@ function courseplay:start(self)
 	courseplay.alreadyPrinted = {}
 
 	self.cpTrafficCollisionIgnoreList = {}
-	self.cp.collidingVehicleId = nil
-	self.cp.collidingObjects = {
-		all = {};
-	};
 	
-	courseplay:debug(string.format("%s: Start/Stop: deleting \"self.cp.collidingVehicleId\"", nameNum(self)), 3);
 	self:setIsCourseplayDriving(false);
 	courseplay:setIsRecording(self, false);
 	courseplay:setRecordingIsPaused(self, false);
@@ -204,8 +199,6 @@ function courseplay:start(self)
 		courseplay:disableCropDestruction(self);
 	end;
 
-	local ret_removeLegacyCollisionTriggers = false			-- TODO could be used for further processing / error handling / information to the user
-	ret_removeLegacyCollisionTriggers = courseplay:removeLegacyCollisionTriggers(self)
 	-- and another ugly hack here as when settings.lua setAIDriver() is called the bale loader does not seem to be
 	-- attached and I don't have the motivation do dig through the legacy code to find out why
 	if self.cp.mode == courseplay.MODE_FIELDWORK then
@@ -355,9 +348,6 @@ function courseplay:stop(self)
 		self.cp.driver:dismiss()
 	end
 	
-	local ret2_removeLegacyCollisionTriggers = false				-- TODO could be used for further processing / error handling / information to the user
-	ret_removeLegacyCollisionTriggers = courseplay:removeLegacyCollisionTriggers(self)
-	
 
 	-- TODO: move this to TrafficCollision.lua
     if self:getAINeedsTrafficCollisionBox() then
@@ -459,14 +449,8 @@ function courseplay:stop(self)
 	self.cp.hasMachineToFill = false;
 	self.cp.unloadOrder = false
 	self.cp.isUnloadingStopped = false
-	self.cp.foundColli = {}
 	self.cp.TrafficBrake = false
 	self.cp.inTraffic = false
-	self.cp.collidingVehicleId = nil
-	self.cp.collidingObjects = {
-		all = {};
-	};
-	self.cp.bypassWaypointsSet = false
 	-- deactivate beacon and hazard lights
 	if self.beaconLightsActive then
 		self:setBeaconLightsVisibility(false);
@@ -476,8 +460,6 @@ function courseplay:stop(self)
 	end;
 
 	-- resetting variables
-	--self.cp.ColliHeightSet = nil
-	self.cp.tempCollis = {}
 	self.checkSpeedLimit = self.cp.savedCheckSpeedLimit;
 	courseplay:resetTipTrigger(self);
 	self:setIsCourseplayDriving(false);

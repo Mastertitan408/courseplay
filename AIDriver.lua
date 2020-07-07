@@ -235,6 +235,7 @@ function AIDriver:beforeStart()
 		-- is in aiTrafficCollisionTranslation, if you do a setTranslation() it won't remain there...
 		self.vehicle.spec_aiVehicle.aiTrafficCollisionTranslation[2] = -1000
 	end
+	self.trafficConflictDetector = TrafficConflictDetector(self.vehicle, self.course)
 end
 
 --- Start driving
@@ -258,11 +259,14 @@ function AIDriver:dismiss()
 	if self.collisionDetector then
 		self.collisionDetector:reset()		-- restore the default direction of the colli boxes
 	end
-	self:resetTrafficControl()
 	self.vehicle:setBeaconLightsVisibility(false)
 	self:clearAllInfoTexts()
 	self:stop()
 	self.active = false
+	if self.trafficConflictDetector then 
+		self.trafficConflictDetector:delete()
+		self.trafficConflictDetector = nil
+	end
 end
 
 --- Is the driver started?
@@ -335,6 +339,7 @@ end
 
 --- Update AI driver, everything that needs to run in every loop
 function AIDriver:update(dt)
+	self:updateTrafficConflictDetector()
 	self:updateProximitySensors()
 	self:updatePathfinding()
 	self:drive(dt)
@@ -531,7 +536,6 @@ function AIDriver:startCourse(course, ix, nextCourse, nextWpIx)
 	else
 		self:debug('Starting a course, at waypoint %d, no next course set.', ix)
 	end
-	self:resetTrafficControl()
 	self.nextWpIx = nextWpIx
 	self.nextCourse = nextCourse
 	self.course = course
@@ -1371,7 +1375,6 @@ end
 function AIDriver:startCourseWithPathfinding(course, ix, zOffset, fieldNum, alwaysUsePathfinding)
 	-- make sure we have at least a direct course until we figure out a better path. This can happen
 	-- when we don't have a course set yet when starting the pathfinding, for example when starting the course.
-	self:resetTrafficControl()
 	self.course = course
 	self.ppc:setCourse(course)
 	self.ppc:initialize(ix)
@@ -1601,13 +1604,10 @@ function AIDriver:onUnBlocked()
 	self:debug('Unblocked...')
 end
 
-function AIDriver:trafficControlOK()
-	-- TODO: why the root node? Why not the vehicle itself?
-	return g_trafficController:reserve(self.vehicle.rootNode, self.course, self.ppc:getCurrentWaypointIx())
-end
-
-function AIDriver:resetTrafficControl()
-	g_trafficController:cancel(self.vehicle.rootNode)
+function AIDriver:updateTrafficConflictDetector()
+	if self.trafficConflictDetector and self.course and g_updateLoopIndex % 2 == 0 then 
+		self.trafficConflictDetector:update(self.course, self.course:getCurrentWaypointIx()) 
+	end
 end
 
 function AIDriver:detectSlipping()

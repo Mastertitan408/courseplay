@@ -294,16 +294,6 @@ function CombineUnloadAIDriver:driveOnField(dt)
 		if courseplay:distanceToPoint(self.vehicle,cx,cy,cz) < 50 then
 			self:setNewOnFieldState(self.states.GET_ALIGNCOURSE_TO_TRACTOR)
 		end
-		--use trafficController
-		if not self:trafficControlOK() then
-			local blockingVehicle = g_currentMission.nodeToObject[g_trafficController:getBlockingVehicleId(self.vehicle.rootNode)]
-			if blockingVehicle and blockingVehicle ~= self.tractorToFollow then
-				g_trafficController:solve(self.vehicle.rootNode)
-				self:hold()
-			end
-		else
-			g_trafficController:resetSolver(self.vehicle.rootNode)
-		end
 
 	elseif self.onFieldState == self.states.DRIVE_TO_COMBINE then
 
@@ -312,12 +302,6 @@ function CombineUnloadAIDriver:driveOnField(dt)
 		courseplay:setInfoText(self.vehicle, "COURSEPLAY_DRIVE_TO_COMBINE");
 
 		self:setFieldSpeed()
-
-		--use trafficController
-		if not self:trafficControlOK() then
-			self:debugSparse('Traffic conflict, stop.')
-			self:hold()
-		end
 
 		-- stop when too close to a combine not ready to unload (wait until it is done with turning for example)
 		if self:isWithinSafeManeuveringDistance(self.combineToUnload) then
@@ -368,17 +352,6 @@ function CombineUnloadAIDriver:driveOnField(dt)
 		local dx,dy,dz = worldToLocal(self.tractorToFollow.rootNode,sx,sy,sz)
 		if math.abs(dx)< 2 and dz > -40 and dz < 0 then
 			self:setNewOnFieldState(self.states.FOLLOW_TRACTOR)
-		end
-
-		--use trafficController
-		if not self:trafficControlOK() then
-			local blockingVehicle = g_currentMission.nodeToObject[g_trafficController:getBlockingVehicleId(self.vehicle.rootNode)]
-			if blockingVehicle and blockingVehicle ~= self.tractorToFollow  then
-				g_trafficController:solve(self.vehicle.rootNode)
-				self:hold()
-			end
-		else
-			g_trafficController:resetSolver(self.vehicle.rootNode)
 		end
 
 	elseif self.onFieldState == self.states.UNLOADING_MOVING_COMBINE then
@@ -452,16 +425,6 @@ function CombineUnloadAIDriver:driveOnField(dt)
 		self:followChopperThroughTurn()
 
 	elseif self.onFieldState == self.states.DRIVE_TO_UNLOAD_COURSE then
-
-		--use trafficController
-		if not self:trafficControlOK() then
-			-- TODO: don't solve anything for now, just wait
-			--g_trafficController:solve(self.vehicle.rootNode)
-			self:debugSparse('holding due to traffic')
-			self:hold()
-		else
-			g_trafficController:resetSolver(self.vehicle.rootNode)
-		end
 
 		-- try not crashing into our combine on the way to the unload course
 		if self.combineJustUnloaded and self:isWithinSafeManeuveringDistance(self.combineJustUnloaded)
@@ -1703,13 +1666,6 @@ function CombineUnloadAIDriver:driveToMovingCombine()
 	courseplay:setInfoText(self.vehicle, "COURSEPLAY_DRIVE_TO_COMBINE");
 
 	self:setFieldSpeed()
-
-	-- don't use trafficController, the maneuvering stuff will keep us away from the combine (as long there are
-	-- no other vehicles around)
---	if not self:trafficControlOK() then
---		self:debugSparse('Traffic conflict, stop.')
---		self:hold()
---	end
 
 	-- stop when too close to a combine not ready to unload (wait until it is done with turning for example)
 	if self:isWithinSafeManeuveringDistance(self.combineToUnload) and self.combineToUnload.cp.driver:isManeuvering() then
