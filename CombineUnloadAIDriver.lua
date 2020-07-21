@@ -202,6 +202,15 @@ function CombineUnloadAIDriver:resetPathfinder()
 	self.pathfinderFailureCount = 0
 end
 
+function CombineUnloadAIDriver:onConflict(vehicle, d, eta, yRotDiff, hold)
+	if self.onFieldState == self.states.DRIVE_TO_COMBINE or
+		self.onFieldState == self.states.DRIVE_TO_MOVING_COMBINE or
+		self.onFieldState == self.states.DRIVE_TO_UNLOAD_COURSE then
+		AIDriver.onConflict(self, vehicle, d, eta, yRotDiff, hold)
+	end
+end
+
+
 -- we want to come to a hard stop while the base class pathfinder is running (starting a course with pathfinding),
 -- because the way AIDriver works, it'll initialize the PPC to the new course/waypoint, which will turn the
 -- vehicle's wheels in that direction, and since setting speed to 0 will just let the vehicle roll for a while
@@ -430,7 +439,7 @@ function CombineUnloadAIDriver:driveOnField(dt)
 		if self.combineJustUnloaded and self:isWithinSafeManeuveringDistance(self.combineJustUnloaded)
 				 and self.combineJustUnloaded.cp.driver:isManeuvering() then
 			self:debugSparse('holding combine %s while leaving for the unload course', self.combineJustUnloaded:getName())
-			self.combineJustUnloaded.cp.driver:hold()
+			--self.combineJustUnloaded.cp.driver:hold()
 		end
 
 	elseif self.onFieldState == self.states.DRIVE_BACK_FULL then
@@ -502,7 +511,7 @@ end
 
 function CombineUnloadAIDriver:holdCombine()
 	self:debugSparse('Holding combine.')
-	self.combineToUnload.cp.driver:hold()
+	--self.combineToUnload.cp.driver:hold()
 end
 
 function CombineUnloadAIDriver:getRecordedSpeed()
