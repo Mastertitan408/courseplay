@@ -6,6 +6,7 @@ SiloSelectedFillTypeEvent.TYPE_MOVE_DOWN_X = 3
 SiloSelectedFillTypeEvent.TYPE_CHANGE_MAX_FILLLEVEL = 4
 SiloSelectedFillTypeEvent.TYPE_CHANGE_RUNCOUNTER = 5
 SiloSelectedFillTypeEvent.TYPE_CLEANUP_OLD_CODE = 6
+SiloSelectedFillTypeEvent.TYPE_CHANGE_MIN_FILLLEVEL = 7
 local SiloSelectedFillTypeEvent_mt = Class(SiloSelectedFillTypeEvent, Event);
 
 InitEventClass(SiloSelectedFillTypeEvent, "SiloSelectedFillTypeEvent");
@@ -91,8 +92,10 @@ function SiloSelectedFillTypeEvent:run(connection) -- wir fuehren das empfangene
 		self.vehicle.cp.settings[self.name]:setRunCounterFromNetwork(self.index,self.value)
 	elseif self.settingType == SiloSelectedFillTypeEvent.TYPE_CHANGE_MAX_FILLLEVEL then
 		self.vehicle.cp.settings[self.name]:setMaxFillLevelFromNetwork(self.index,self.value)
-	elseif self.settingType == SiloSelectedFillTypeEvent.CLEANUP_OLD_FILLTYPES then
+	elseif self.settingType == SiloSelectedFillTypeEvent.TYPE_CLEANUP_OLD_FILLTYPES then
 		self.vehicle.cp.settings[self.name]:cleanUpOldFillTypes(true)
+	elseif self.settingType == SiloSelectedFillTypeEvent.TYPE_CHANGE_MIN_FILLEVEL then
+		self.vehicle.cp.settings[self.name]:setMinFillLevelFromNetwork(self.index,self.value)
 	end
 	if not connection:getIsServer() then
 		courseplay:debug("broadcast settings event feedback",5)

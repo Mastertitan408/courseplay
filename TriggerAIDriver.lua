@@ -87,13 +87,13 @@ function TriggerAIDriver:driveCourse(dt)
 	AIDriver.driveCourse(self,dt)
 end
 
-function TriggerAIDriver:isFilledUntilPercantageX(currentFillType,maxFillLevel)
+function TriggerAIDriver:isFilledUntilPercantageX(currentFillType,maxFillLevelPercentage)
 	local fillLevelInfo = {}
 	self:getAllFillLevels(self.vehicle, fillLevelInfo)
 	for fillType, info in pairs(fillLevelInfo) do
 		if fillType == currentFillType then 
 			local fillLevelPercentage = info.fillLevel/info.capacity*100
-			if fillLevelPercentage >= maxFillLevel then
+			if fillLevelPercentage >= maxFillLevelPercentage or fillLevelPercentage > 99 then
 				return true
 			end
 		end
@@ -332,6 +332,14 @@ function TriggerAIDriver:areFillLevelsOk(fillLevelInfo)
 	return true
 end
 
+function TriggerAIDriver:checkTriggerMinStartFillLevel(minFillPercentage,objectFillCapacity,triggerFillLevel)
+	return true
+end
+
+function TriggerAIDriver:checkRunCounterAllowed(runCounter)
+	return true
+end
+
 --Trigger stuff
 
 
@@ -363,10 +371,10 @@ function TriggerAIDriver:activateFillTriggersWhenAvailable(object)
 			if not rootVehicle.cp.driver:ignoreTrigger() and not spec.fillTrigger.isFilling then	
 				if coverSpec and coverSpec.isDirty then 
 					courseplay.debugFormat(2,"cover is still opening wait!")
+					rootVehicle.cp.driver:setLoadingState()
 				else
 					object:setFillUnitIsFilling(true)
 				end
-				rootVehicle.cp.driver:setLoadingState()
 			end
 		end
 	end
@@ -506,45 +514,60 @@ function TriggerAIDriver:onActivateObject(superFunc,vehicle,callback)
 			local firstFillType = nil
 			local validFillTypIndexes = {}
 			local emptyOnes = 0
-			for fillTypeIndex, fillLevel in pairs(fillLevels) do
-				if self.fillTypes == nil or self.fillTypes[fillTypeIndex] then
-					if fillableObject:getFillUnitAllowsFillType(fillUnitIndex, fillTypeIndex) then
-						for _,data in ipairs(fillTypeData) do
-							--check silo fillLevel
-							if fillLevel > 0 and  fillTypeIndex == data.fillType then
-								--check if specific fillType is reached
-								if not vehicle.cp.driver:isFilledUntilPercantageX(fillTypeIndex,data.maxFillLevel) then 
+			local lastCounter
+			for _,data in ipairs(fillTypeData) do
+				for fillTypeIndex, fillLevel in pairs(fillLevels) do
+					if self.fillTypes == nil or self.fillTypes[fillTypeIndex] then
+						if fillableObject:getFillUnitAllowsFillType(fillUnitIndex, fillTypeIndex) then
+							--check if specific fillType is reached
+							if not vehicle.cp.driver:isFilledUntilPercantageX(fillTypeIndex,data.maxFillLevel) and fillableObject:getFillUnitFreeCapacity(fillUnitIndex)>1 then 
+								--check silo fillLevel
+								if fillLevel > 0 and vehicle.cp.driver:checkTriggerMinStartFillLevel(data.minFillLevel,fillableObject:getFillUnitCapacity(fillUnitIndex),fillLevel) and fillTypeIndex == data.fillType then 
 									--cover is open, wait till it's open to start load
-									if fillableObject.spec_cover and fillableObject.spec_cover.isDirty then 
-										vehicle.cp.driver:setLoadingState(fillableObject,fillUnitIndex,fillTypeIndex,self)
-										courseplay.debugFormat(2, 'Cover is still opening!')
-										return
-									end
-									--fixes giants bug for Lemken SolitĂ¤r with has fillunit that keeps on filling to infinity
-									if fillableObject:getFillUnitCapacity(fillUnitIndex) <=0 then 
-										vehicle.cp.driver:resetLoadingState()
-										return
+									if vehicle.cp.driver:checkRunCounterAllowed(data.runCounter) then
+										if fillableObject.spec_cover and fillableObject.spec_cover.isDirty then 
+											vehicle.cp.driver:setLoadingState(fillableObject,fillUnitIndex,fillTypeIndex,self)
+											courseplay.debugFormat(2, 'Cover is still opening!')
+											return
+										end
+										--fixes giants bug for Lemken Solitaer with has fillunit that keeps on filling to infinity
+										if fillableObject:getFillUnitCapacity(fillUnitIndex) <=0 then 
+											vehicle.cp.driver:resetLoadingState()
+											return
+										else
+										--start loading everthing is ok
+											self:onFillTypeSelection(fillTypeIndex)
+											callback.ok = true
+											return								
+										end
 									else
-									--start loading everthing is ok
-										self:onFillTypeSelection(fillTypeIndex)
-										callback.ok = true
-										return								
+										courseplay.debugFormat(2, 'runCounter = 0!')
 									end
 								else
-									courseplay.debugFormat(2, 'FillLevel reached!')
-									callback.ok = true
+									courseplay.debugFormat(2, 'FillType is empty or minFillLevel not reached!')
+									emptyOnes = emptyOnes+1
 								end
 							else 
-								emptyOnes = emptyOnes+1
+								courseplay.debugFormat(2, 'FillLevel reached!')
+								callback.ok = true
+								vehicle.cp.driver:resetLoadingState()
+								break
 							end
 						end
 					end
 				end
+				lastCounter=data.runCounter
 			end
 			--if all selected fillTypes are empty in the trigger and no fillLevel reached => wait for more
-			if emptyOnes == fillTypeDataSize and not callback.ok then 
+			if emptyOnes == fillTypeDataSize and not callback.ok and emptyOnes>0 then 
 				vehicle.cp.driver:setLoadingState()
 				CpManager:setGlobalInfoText(vehicle, 'FARM_SILO_IS_EMPTY');
+				courseplay.debugFormat(2, 'Silo empty, emptyOnes: '..emptyOnes)
+				return
+			elseif lastCounter === 0 then 
+				vehicle.cp.driver:setLoadingState()
+				CpManager:setGlobalInfoText(vehicle, 'RUNCOUNTER_ERROR_FOR_TRIGGER');
+				courseplay.debugFormat(2, 'last runCounter=0 ')
 				return
 			end
 		end
@@ -553,6 +576,7 @@ function TriggerAIDriver:onActivateObject(superFunc,vehicle,callback)
 	end
 end
 LoadTrigger.onActivateObject = Utils.overwrittenFunction(LoadTrigger.onActivateObject,TriggerAIDriver.onActivateObject)
+
 
 --LoadTrigger => start/stop driver and close cover once free from trigger
 function TriggerAIDriver:setIsLoading(superFunc,isLoading, targetObject, fillUnitIndex, fillType, noEventSend)

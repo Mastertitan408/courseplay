@@ -2886,6 +2886,7 @@ function SiloSelectedFillTypeSetting:init(vehicle, mode)
 	self.mode = mode
 	self.MAX_RUNS = 20
 	self.MAX_PERCENT = 100
+	self.MIN_PERCENT = 1
 	self.runCounterActive = true
 	self.MAX_FILLTYPES = 2
 	self.disallowedFillTypes = nil
@@ -2894,6 +2895,7 @@ function SiloSelectedFillTypeSetting:init(vehicle, mode)
 	self.xmlAttributeRunCounter = '#runCounter'
 	self.xmlAttributeFillType = '#fillType'
 	self.xmlAttributeMaxFillLevel = '#maxFillLevel'	
+	self.xmlAttributeMinFillLevel = '#minFillLevel'	
 	self.NetworkTypes = {}
 	self.NetworkTypes.ADD_ELEMENT = 0
 	self.NetworkTypes.DELETE_X = 1
@@ -2902,6 +2904,7 @@ function SiloSelectedFillTypeSetting:init(vehicle, mode)
 	self.NetworkTypes.CHANGE_MAX_FILLLEVEL = 4
 	self.NetworkTypes.CHANGE_RUNCOUNTER = 5
 	self.NetworkTypes.CLEANUP_OLD_FILLTYPES = 6
+	self.NetworkTypes.CHANGE_MIN_FILLEVEL = 7
 end
 
 function SiloSelectedFillTypeSetting:getMaxFillTypes()
@@ -2939,14 +2942,15 @@ function SiloSelectedFillTypeSetting:onFillTypeSelection(selectedFillType,noEven
 	end
 end  
 
-function SiloSelectedFillTypeSetting:fillTypeDataToAdd(selectedfillType,counter,maxLevel)
+function SiloSelectedFillTypeSetting:fillTypeDataToAdd(selectedfillType,counter,maxLevel,minLevel)
 	local data = nil
 	if self.runCounterActive then
 		data = {
 			fillType = selectedfillType,
 			text = g_fillTypeManager:getFillTypeByIndex(selectedfillType).title,
-			runCounter = counter or self.MAX_RUNS--,
-	--		maxFillLevel = maxLevel or self.MAX_PERCENT --TODO: figure this one for mode 1 out
+			runCounter = counter or self.MAX_RUNS,
+			maxFillLevel = maxLevel or self.MAX_PERCENT, --TODO: figure this one for mode 1 out
+			minFillLevel = minLevel or self.MIN_PERCENT
 		}	
 	else
 		data = {
@@ -3024,26 +3028,16 @@ function SiloSelectedFillTypeSetting:isActive()
 	return runCounterCheck
 end
 
-function SiloSelectedFillTypeSetting:getRunCounterText(index)
-	if not self.runCounterActive then
-		return ""
-	end
+function SiloSelectedFillTypeSetting:getTexts(index)
 	local data = self:getDataByIndex(index)
-	if data and data.runCounter then 
-		local strg = data.runCounter.."/"..self.MAX_RUNS
-		return strg
+	
+	if data then
+		local runCounterText = data.runCounter and data.runCounter.."/"..self.MAX_RUNS or ""
+		local maxFillLevelText = data.maxFillLevel and data.maxFillLevel.."%" or ""
+		local minFillLevelText = data.minFillLevel and data.minFillLevel.."%" or ""
+		return runCounterText,maxFillLevelText,minFillLevelText
 	else
-		return ""
-	end
-end
-
-function SiloSelectedFillTypeSetting:getMaxFillLevelText(index)
-	local data = self:getDataByIndex(index)
-	if data and data.maxFillLevel then 
-		local strg = data.maxFillLevel.."%"
-		return strg
-	else
-		return ""
+		return "","",""
 	end
 end
 
@@ -3062,12 +3056,7 @@ function SiloSelectedFillTypeSetting:decrementRunCounterByFillType(fillLevelInfo
 	for index,data in ipairs(totalData) do 
 		for fillType,info in pairs(fillLevelInfo) do 
 			if data.fillType == fillType then
-				local _data = self:getDataByIndex(index)
-				_data.runCounter = _data.runCounter-1
-				self:sendEvent(self.NetworkTypes.CHANGE_RUNCOUNTER,index,-1)
-				break
-			else
-		
+				self:decrementRunCounter(index)		
 			end
 		end
 	end
@@ -3101,6 +3090,25 @@ function SiloSelectedFillTypeSetting:changeMaxFillLevel(index)
 	end	
 end
 
+function SiloSelectedFillTypeSetting:changeMinFillLevel(index)
+	local diff = nil
+	if index < 0 then 
+		diff=-1
+		index = index*(-1)
+	else
+		diff = 1
+	end
+	local data = self:getDataByIndex(index)
+	if data and data.minFillLevel then 
+		local newDiff = data.minFillLevel+diff 
+		if newDiff >0 and newDiff <=100 then
+			data.minFillLevel = newDiff
+			self:sendEvent(self.NetworkTypes.CHANGE_MIN_FILLEVEL,index,diff)
+		end
+	end	
+end
+
+
 function SiloSelectedFillTypeSetting:setRunCounterFromNetwork(index,value)
 	local totalData = self:getDataByIndex(index)
 	if data and data.runCounter then 
@@ -3120,6 +3128,17 @@ function SiloSelectedFillTypeSetting:setMaxFillLevelFromNetwork(index,value)
 		end
 	end
 end
+
+function SiloSelectedFillTypeSetting:setMinFillLevelFromNetwork(index,value)
+	local totalData = self:getDataByIndex(index)
+	if data and data.minFillLevel then 
+		local diff = data.minFillLevel+value
+		if diff >= 1 and diff <=100 then 
+			data.minFillLevel = diff
+		end
+	end
+end
+
 
 function SiloSelectedFillTypeSetting:moveUpByIndex(index,noEventSend)
 	LinkedListSetting.moveUpByIndex(self,index)
@@ -3147,18 +3166,19 @@ function SiloSelectedFillTypeSetting:getKey(parentKey)
 end
 
 function SiloSelectedFillTypeSetting:loadFromXml(xml, parentKey)
-	local size = getXMLInt(xml, self:getKey(parentKey)..self.xmlAttributeSize)
+	local size = Utils.getNoNil(getXMLInt(xml, self:getKey(parentKey)..self.xmlAttributeSize),0)
 	if size and size>0 then
 		for key=1,size do 
 			local elementKey = string.format("%s.element(%d)", self:getKey(parentKey), key-1)
-			local selectedFillType = getXMLInt(xml, elementKey..self.xmlAttributeFillType)
+			local selectedFillType = Utils.getNoNil(getXMLInt(xml, elementKey..self.xmlAttributeFillType), 0)
 			local counter
 			if self.runCounterActive then
-				counter = getXMLInt(xml, elementKey..self.xmlAttributeRunCounter) or self.MAX_RUNS
+				counter = Utils.getNoNil(getXMLInt(xml, elementKey..self.xmlAttributeRunCounter), self.MAX_RUNS)
 			end
-			local maxLevel = getXMLInt(xml, elementKey..self.xmlAttributeMaxFillLevel) or 100
+			local maxLevel = Utils.getNoNil(getXMLInt(xml, elementKey..self.xmlAttributeMaxFillLevel), 100)
+			local minLevel = Utils.getNoNil(getXMLInt(xml, elementKey..self.xmlAttributeMinFillLevel), 1)
 			if selectedFillType then 
-				self:addLast(self:fillTypeDataToAdd(selectedFillType,counter,maxLevel))
+				self:addLast(self:fillTypeDataToAdd(selectedFillType,counter,maxLevel,minLevel))
 			end
 		end
 	end
@@ -3175,6 +3195,7 @@ function SiloSelectedFillTypeSetting:saveToXml(xml, parentKey)
 				setXMLInt(xml, elementKey..self.xmlAttributeRunCounter, Utils.getNoNil(data.runCounter,self.MAX_RUNS))
 			end
 			setXMLInt(xml, elementKey..self.xmlAttributeMaxFillLevel, Utils.getNoNil(data.maxFillLevel,100))
+			setXMLInt(xml, elementKey..self.xmlAttributeMinFillLevel, Utils.getNoNil(data.minFillLevel,1))
 		end
 	end
 end
@@ -3190,6 +3211,7 @@ function SiloSelectedFillTypeSetting:onWriteStream(stream)
 				streamDebugWriteInt32(stream, data.runCounter)
 			end
 			streamDebugWriteInt32(stream, data.maxFillLevel)
+			streamDebugWriteInt32(stream, data.minFillLevel)
 		end
 	end
 end
@@ -3200,12 +3222,14 @@ function SiloSelectedFillTypeSetting:onReadStream(stream)
 	if size and size>0 then
 		for key=1,size do 
 			local selectedFillType = streamDebugReadInt32(stream)
+			local counter
 			if self.runCounterActive then
-				local counter = streamDebugReadInt32(stream)
+				counter = streamDebugReadInt32(stream)
 			end
 			local maxLevel = streamDebugReadInt32(stream)
+			local minLevel = streamDebugReadInt32(stream)
 			if selectedFillType then 
-				self:addLast(self:fillTypeDataToAdd(selectedFillType))
+				self:addLast(self:fillTypeDataToAdd(selectedFillType,counter,maxLevel,minLevel))
 			end
 		end
 	end

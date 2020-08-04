@@ -1946,6 +1946,14 @@ end
 
 function courseplay.hud:setupSiloSelectedFillTypeList(vehicle,setting, hudPage,startLine,stopLine, column,runCounterActive)
 	--self:debug(vehicle,"  setupSiloSelectedFillTypeList: "..tostring(funct))
+	local mouseWheelAreaMAX = {
+		x = self.col2posX[hudPage]+getTextWidth(self.fontSizes.contentValue,"12345"),
+		w = getTextWidth(self.fontSizes.contentValue,"123")
+	}
+	local mouseWheelAreaMIN = {
+		x = mouseWheelAreaMAX.x+getTextWidth(self.fontSizes.contentValue,"1234567"),
+		w = getTextWidth(self.fontSizes.contentValue,"123")
+	}
 	local diff = startLine-1
 	courseplay.button:new(vehicle, hudPage, { 'iconSprite.png', 'refresh' }, "cleanUpOldFillTypes",   1, self.buttonPosX[1], self.linesButtonPosY[diff], self.buttonSize.small.w, self.buttonSize.small.h, diff, -5, false):setSetting(setting);
 	for i=startLine,stopLine do 
@@ -1956,7 +1964,8 @@ function courseplay.hud:setupSiloSelectedFillTypeList(vehicle,setting, hudPage,s
 			courseplay.button:new(vehicle, hudPage, { 'iconSprite.png', 'navMinus' }, "decrementRunCounter",   i-diff, self.buttonPosX[5], self.linesButtonPosY[i], self.buttonSize.small.w, self.buttonSize.small.h, i, -5, false):setSetting(setting);
 			courseplay.button:new(vehicle, hudPage, { 'iconSprite.png', 'navPlus' },  "incrementRunCounter",   i-diff, self.buttonPosX[4], self.linesButtonPosY[i], self.buttonSize.small.w, self.buttonSize.small.h, i,  5, false):setSetting(setting);
 		end
-		courseplay.button:new(vehicle, hudPage, nil, "changeMaxFillLevel", i-diff, self.contentMinX, self.linesButtonPosY[i], self.contentMaxWidth, self.lineHeight, i, 1, true, true):setSetting(setting);
+		courseplay.button:new(vehicle, hudPage, nil, "changeMaxFillLevel", i-diff, mouseWheelAreaMAX.x, self.linesButtonPosY[i], mouseWheelAreaMAX.w, self.lineHeight, i, 1, true, true):setSetting(setting);
+		courseplay.button:new(vehicle, hudPage, nil, "changeMinFillLevel", i-diff, mouseWheelAreaMIN.x, self.linesButtonPosY[i], mouseWheelAreaMIN.w, self.lineHeight, i, 1, true, true):setSetting(setting);
 		--vehicle.cp.hud.content.pages[hudPage][i][column].functionToCall = funct
 	end
 end
@@ -2113,11 +2122,14 @@ function courseplay.hud:updateSiloSelectedFillTypeList(vehicle,page,startLine,st
 	if not vehicle.cp.settings[key]:isFull() then 
 		vehicle.cp.hud.content.pages[page][line][1].text = vehicle.cp.settings[key]:getLabel()
 	end
-	
+	if not vehicle.cp.settings[key]:isEmpty() then
+		vehicle.cp.hud.content.pages[page][line][2].text = string.format("%5s  %3s  %3s","count","max","min")
+	end
 	local diff = startLine-1
 	for i= startLine, stopLine do
 		vehicle.cp.hud.content.pages[page][i][1].text = vehicle.cp.settings[key]:getText(i-diff)
-		vehicle.cp.hud.content.pages[page][i][2].text = vehicle.cp.settings[key]:getRunCounterText(i-diff).."   "..vehicle.cp.settings[key]:getMaxFillLevelText(i-diff)
+	--	vehicle.cp.hud.content.pages[page][i][2].text = vehicle.cp.settings[key]:getRunCounterText(i-diff).."   "..vehicle.cp.settings[key]:getMinFillLevelText(i-diff).."   "..vehicle.cp.settings[key]:getMaxFillLevelText(i-diff)
+		vehicle.cp.hud.content.pages[page][i][2].text = string.format("%5s  %3s  %3s",vehicle.cp.settings[key]:getTexts(i-diff))
 	end
 	--button
 	local size = vehicle.cp.settings[key]:getSize()

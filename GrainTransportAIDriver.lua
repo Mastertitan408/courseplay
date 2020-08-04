@@ -34,7 +34,6 @@ end
 
 function GrainTransportAIDriver:start(startingPoint)
 	self.vehicle:setCruiseControlMaxSpeed(self.vehicle:getSpeedLimit() or math.huge)
-	self:beforeStart()
 	TriggerAIDriver.start(self, startingPoint)
 	self:setDriveUnloadNow(false);
 	self.vehicle.cp.siloSelectedFillType = FillType.UNKNOWN
@@ -63,7 +62,7 @@ function GrainTransportAIDriver:drive(dt)
 	-- should we keep driving?
 	local allowedToDrive = self:checkLastWaypoint()
 	
-	if self.vehicle.cp.settings.siloSelectedFillTypeGrainTransportDriver:isEmpty() then 
+	if self:getSiloSelectedFillTypeSetting():isEmpty() then 
 		allowedToDrive = false
 		self:setInfoText('NO_SELECTED_FILLTYPE')
 	else
@@ -85,6 +84,15 @@ function GrainTransportAIDriver:drive(dt)
 	-- TODO: clean up the self.allowedToDrives above and use a local copy
 	if self.state == self.states.STOPPED or not allowedToDrive then
 		self:hold()
+	end
+	
+	if self:isLoading() then
+		self:checkFilledUnitFillPercantage()
+		if self.fillableObject and self.fillableObject.object and self.fillableObject.fillUnitIndex then
+			local fillLevel = self.fillableObject.object:getFillUnitFillLevel(self.fillableObject.fillUnitIndex)
+			local fillCapacity = self.fillableObject.object:getFillUnitCapacity(self.fillableObject.fillUnitIndex)
+			courseplay:setInfoText(self.vehicle, string.format("COURSEPLAY_LOADING_AMOUNT;%d;%d",math.floor(fillLevel),fillCapacity))
+		end
 	end
 	
 	self:updateInfoText()
@@ -109,12 +117,12 @@ function GrainTransportAIDriver:onWaypointChange(newIx)
 	end
 	-- Close cover after leaving the silo, assuming the silo is at waypoint 1
 	if not self:hasTipTrigger() and not self:isNearFillPoint() then
-		courseplay:openCloseCover(self.vehicle, courseplay.SHOW_COVERS)
+	--	courseplay:openCloseCover(self.vehicle, courseplay.SHOW_COVERS)
 	end
 	--temp solution till load_tippers is refactored
 	-- and we can have a non cyclic value that the loading process is finished
 	--THIS is not working as it should with multiple trailers!!! 
-	if newIx == 4 and self:getDriveUnloadNow() then
+	if newIx == 4 then
 		self:decrementRunCounter()
 		self:refreshHUD()
 	end	
@@ -124,8 +132,8 @@ end
 function GrainTransportAIDriver:checkLastWaypoint()
 	local allowedToDrive = true
 	if self.ppc:getCurrentWaypointIx() == self.course:getNumberOfWaypoints() then
-		courseplay:openCloseCover(self.vehicle, not courseplay.SHOW_COVERS)
-		if not self.vehicle.cp.settings.siloSelectedFillTypeGrainTransportDriver:isActive() then
+	--	courseplay:openCloseCover(self.vehicle, not courseplay.SHOW_COVERS)
+		if not self:getSiloSelectedFillTypeSetting():isActive() then
 			-- stop at the last waypoint when the run counter expires
 			allowedToDrive = false
 			self:stop('END_POINT_MODE_1')
@@ -142,12 +150,15 @@ end
 function GrainTransportAIDriver:load(allowedToDrive)
 	-- Loading
 	-- tippers are not full
-	if self:isNearFillPoint() and self.vehicle.cp.totalFillLevel <= self.vehicle.cp.totalCapacity then
-		allowedToDrive = courseplay:load_tippers(self.vehicle, allowedToDrive);
-		courseplay:setInfoText(self.vehicle, string.format("COURSEPLAY_LOADING_AMOUNT;%d;%d",courseplay.utils:roundToLowerInterval(self.vehicle.cp.totalFillLevel, 100),self.vehicle.cp.totalCapacity));
-		courseplay:openCloseCover(self.vehicle, not courseplay.SHOW_COVERS)
+	if self:isNearFillPoint() then
+		self:activateLoadingTriggerWhenAvailable()
+		
+	--	allowedToDrive = courseplay:load_tippers(self.vehicle, allowedToDrive);
+	--	courseplay:setInfoText(self.vehicle, string.format("COURSEPLAY_LOADING_AMOUNT;%d;%d",courseplay.utils:roundToLowerInterval(self.vehicle.cp.totalFillLevel, 100),self.vehicle.cp.totalCapacity));
+	--	courseplay:openCloseCover(self.vehicle, not courseplay.SHOW_COVERS)
 	end
-	return allowedToDrive
+	return true
+--	return allowedToDrive
 end
 
 function GrainTransportAIDriver:updateLights()
@@ -161,5 +172,26 @@ end
 function GrainTransportAIDriver:decrementRunCounter()
 	local fillLevelInfo = {}
 	self:getAllFillLevels(self.vehicle, fillLevelInfo)
-	self.vehicle.cp.settings.siloSelectedFillTypeGrainTransportDriver:decrementRunCounterByFillType(fillLevelInfo)
+	self:getSiloSelectedFillTypeSetting():decrementRunCounterByFillType(fillLevelInfo)
+end
+
+function GrainTransportAIDriver:isLoadingTriggerCallbackEnabled()
+	return true
+end
+
+function GrainTransportAIDriver:getSiloSelectedFillTypeSetting()
+	return self.vehicle.cp.settings.siloSelectedFillTypeGrainTransportDriver
+end
+
+function GrainTransportAIDriver:checkTriggerMinStartFillLevel(minFillPercentage,objectFillCapacity,triggerFillLevel)
+	local neededFillLevel = minFillPercentage*objectFillCapacity*0.01
+	if neededFillLevel <= triggerFillLevel then
+		return true
+	end
+end
+
+function GrainTransportAIDriver:checkRunCounterAllowed(runCounter)
+	if runCounter>0 then
+		return true
+	end
 end
