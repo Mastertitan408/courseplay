@@ -1808,3 +1808,7 @@ end
 function AIDriver:isOverloadingTriggerCallbackEnabled()
 	return false
 end
+
+function AIDriver:isAutoDriveDriving()
+	return false
+end

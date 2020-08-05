@@ -1356,3 +1356,7 @@ function FieldworkAIDriver:getVehicleWidth()
 	-- TODO: get folded/unfolded width according to state
 	return self.workWidth
 end
+
+function FieldworkAIDriver:isAutoDriveDriving()
+	return self.state == self.states.ON_UNLOAD_OR_REFILL_WITH_AUTODRIVE
+end

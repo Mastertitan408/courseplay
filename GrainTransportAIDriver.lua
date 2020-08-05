@@ -67,14 +67,16 @@ function GrainTransportAIDriver:drive(dt)
 		self:setInfoText('NO_SELECTED_FILLTYPE')
 	else
 		self:clearInfoText('NO_SELECTED_FILLTYPE')
+		
+		if self:isNearFillPoint() then
+			self:activateLoadingTriggerWhenAvailable()
+		end
 			-- TODO: are these checks really necessary?
 		if self.vehicle.cp.totalFillLevel ~= nil
 			and self.vehicle.cp.tipRefOffset ~= nil
 			and self.vehicle.cp.workToolAttached then
 
 			self:searchForTipTriggers()
-
-			allowedToDrive = self:load(allowedToDrive)
 			allowedToDrive, giveUpControl = self:onUnLoadCourse(allowedToDrive, dt)
 		else
 			self:debug('Safety check failed')
@@ -145,20 +147,6 @@ function GrainTransportAIDriver:checkLastWaypoint()
 		end
 	end
 	return allowedToDrive
-end
-
-function GrainTransportAIDriver:load(allowedToDrive)
-	-- Loading
-	-- tippers are not full
-	if self:isNearFillPoint() then
-		self:activateLoadingTriggerWhenAvailable()
-		
-	--	allowedToDrive = courseplay:load_tippers(self.vehicle, allowedToDrive);
-	--	courseplay:setInfoText(self.vehicle, string.format("COURSEPLAY_LOADING_AMOUNT;%d;%d",courseplay.utils:roundToLowerInterval(self.vehicle.cp.totalFillLevel, 100),self.vehicle.cp.totalCapacity));
-	--	courseplay:openCloseCover(self.vehicle, not courseplay.SHOW_COVERS)
-	end
-	return true
---	return allowedToDrive
 end
 
 function GrainTransportAIDriver:updateLights()
