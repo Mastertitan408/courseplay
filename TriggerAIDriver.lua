@@ -537,7 +537,7 @@ function TriggerAIDriver:onActivateObject(superFunc,vehicle,callback)
 										else
 										--start loading everthing is ok
 											self:onFillTypeSelection(fillTypeIndex)
-											callback.ok = true
+											if callback then callback.ok = true end
 											return								
 										end
 									else
@@ -549,7 +549,7 @@ function TriggerAIDriver:onActivateObject(superFunc,vehicle,callback)
 								end
 							else 
 								courseplay.debugFormat(2, 'FillLevel reached!')
-								callback.ok = true
+								if callback then callback.ok = true end
 								vehicle.cp.driver:resetLoadingState()
 								break
 							end

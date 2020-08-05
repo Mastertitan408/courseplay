@@ -2377,8 +2377,7 @@ function courseplay.hud:setFieldWorkAIDriverContent(vehicle)
 	self:setupCalculateWorkWidthButton(vehicle,3, 2)
 	self:addRowButton(vehicle,nil,'toggleConvoyActive', 3, 3, 1 )
 	self:addSettingsRow(vehicle,nil,'setConvoyMinDistance', 3, 4, 1 )
-	self:addRowButton(vehicle,nil,'toggleAutoDriveMode', 3, 8, 1 ):setOnlyCallLocal();
-
+	self:addRowButton(vehicle,vehicle.cp.settings.autoDriveMode,'next', 3, 8, 1 ):setOnlyCallLocal();
 	
 	--page 7
 	self:addRowButton(vehicle,nil,'toggleAlignmentWaypoint', 7, 6, 1 )

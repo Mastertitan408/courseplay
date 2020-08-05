@@ -14,7 +14,7 @@ function courseplay:loadTriggerCallback(triggerId, otherId, onEnter, onLeave, on
 	
 	local fillableObject = g_currentMission:getNodeObject(otherId)
 	local rootVehicle
-	if fillableObject then 
+	if fillableObject and fillableObject:isa(Vehicle) then 
 		rootVehicle = fillableObject:getRootVehicle()
 	end
 	if courseplay:isAIDriverActive(rootVehicle) then
@@ -64,7 +64,7 @@ end
 function courseplay:fillTriggerCallback(superFunc, triggerId, otherActorId, onEnter, onLeave, onStay, otherShapeId)
 	local fillableObject = g_currentMission:getNodeObject(otherId)
 	local rootVehicle
-	if fillableObject then 
+	if fillableObject and fillableObject:isa(Vehicle) then 
 		rootVehicle = fillableObject:getRootVehicle()
 	end
 	if courseplay:isAIDriverActive(rootVehicle) then

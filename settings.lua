@@ -529,11 +529,6 @@ function courseplay:changeBunkerSpeed(vehicle, changeBy)
 	vehicle.cp.speeds.bunkerSilo = speed;
 end
 
-function courseplay:toggleAutoDriveMode(vehicle)
-	vehicle.cp.settings.autoDriveMode:next()
-	courseplay.debugVehicle(12, vehicle, 'AutoDrive mode: %d', vehicle.cp.settings.autoDriveMode:get())
-end
-
 function courseplay:toggleAlignmentWaypoint( vehicle )
 	vehicle.cp.alignment.enabled = not vehicle.cp.alignment.enabled
 end
@@ -2242,6 +2237,20 @@ function PercentageSettingList:checkAndSetValidValue(new)
 	end
 end
 
+--- Generic Speed setting from x to y 
+---@class SpeedSetting : SettingList
+SpeedSetting = CpObject(SettingList)
+function SpeedSetting:init(name, label, toolTip, vehicle,startValue,stopValue)
+	local values = {}
+	local texts = {}
+	for i=1,stopValue-startValue do 
+		values[i] = startValue+i-1
+		texts[i] = ('%i %s'):format(startValue+i-1, courseplay:getSpeedMeasuringUnit());
+	end
+	SettingList.init(self, name, label, toolTip, vehicle,values, texts)
+	self:set(7)
+end
+
 --- AutoDrive mode setting
 ---@class AutoDriveModeSetting : SettingList
 AutoDriveModeSetting = CpObject(SettingList)
@@ -2268,6 +2277,11 @@ function AutoDriveModeSetting:init(vehicle)
 			'COURSEPLAY_AUTODRIVE_UNLOAD_OR_REFILL_PARK',
 		})
 	self:update()
+end
+
+function AutoDriveModeSetting:next()
+	courseplay.debugVehicle(12, vehicle, 'AutoDrive mode: %d', vehicle.cp.settings.autoDriveMode:get())
+	SettingList.next(self)
 end
 
 function AutoDriveModeSetting:isAutoDriveAvailable()
@@ -3304,6 +3318,18 @@ function ForcedToStopSetting:init(vehicle)
 	BooleanSetting.init(self, 'forcedToStop','--', '--', vehicle,{'COURSEPLAY_UNLOADING_DRIVER_STOP','COURSEPLAY_UNLOADING_DRIVER_START'}) 
 	self:set(false)
 end
+
+---@class BunkerSpeedSetting : SpeedSetting
+BunkerSpeedSetting = CpObject(SpeedSetting)
+function BunkerSpeedSetting:init(vehicle)
+	SpeedSetting.init(self, 'bunkerSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
+	
+end
+
+function BunkerSpeedSetting:validateCurrentValue()
+
+end
+
 
 --- Container for settings
 --- @class SettingsContainer
