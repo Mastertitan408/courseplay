@@ -3388,6 +3388,7 @@ end
 	};
 ]]--
 
+
 --- Container for settings
 --- @class SettingsContainer
 SettingsContainer = CpObject()
