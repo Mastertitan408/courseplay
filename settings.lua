@@ -3319,6 +3319,48 @@ function ForcedToStopSetting:init(vehicle)
 	self:set(false)
 end
 
+---@class ReverseSpeedSetting : SpeedSetting
+ReverseSpeedSetting = CpObject(SpeedSetting)
+function ReverseSpeedSetting:init(vehicle)
+	SpeedSetting.init(self, 'reverseSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
+	
+end
+
+---@class TurnSpeedSetting : SpeedSetting
+TurnSpeedSetting = CpObject(SpeedSetting)
+function TurnSpeedSetting:init(vehicle)
+	SpeedSetting.init(self, 'turnSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
+	
+end
+
+---@class FieldSpeedSettting : SpeedSetting
+FieldSpeedSettting = CpObject(SpeedSetting)
+function FieldSpeedSettting:init(vehicle)
+	SpeedSetting.init(self, 'fieldSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
+	
+end
+
+---@class StreetSpeedSetting : SpeedSetting
+StreetSpeedSetting = CpObject(SpeedSetting)
+function StreetSpeedSetting:init(vehicle)
+	SpeedSetting.init(self, 'streetSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
+	
+end
+
+---@class BunkerSpeedSetting : SpeedSetting
+CrawlSpeedSetting = CpObject(SpeedSetting)
+function BunkerSpeedSetting:init(vehicle)
+	SpeedSetting.init(self, 'crawlSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
+	
+end
+
+---@class BunkerSpeedSetting : SpeedSetting
+BunkerSpeedSetting = CpObject(SpeedSetting)
+function BunkerSpeedSetting:init(vehicle)
+	SpeedSetting.init(self, 'dischargeSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
+	
+end
+
 ---@class BunkerSpeedSetting : SpeedSetting
 BunkerSpeedSetting = CpObject(SpeedSetting)
 function BunkerSpeedSetting:init(vehicle)
@@ -3329,6 +3371,33 @@ end
 function BunkerSpeedSetting:validateCurrentValue()
 
 end
+
+---@class BunkerSpeedSetting : SpeedSetting
+BunkerSpeedSetting = CpObject(SpeedSetting)
+function BunkerSpeedSetting:init(vehicle)
+	SpeedSetting.init(self, 'approachSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
+	
+end
+
+	-- speed limits
+
+
+	self.cp.speeds = {
+		reverse =  6;
+		turn =   10;
+		field =  24;
+		street = self:getCruiseControlMaxSpeed() or 50;
+		crawl = 3;
+		discharge = 8;
+		bunkerSilo = 20;
+		approach = 10;
+		
+		minReverse = 3;
+		minTurn = 3;
+		minField = 3;
+		minStreet = 3;
+		max = self:getCruiseControlMaxSpeed() or 60;
+	};
 
 
 --- Container for settings
