@@ -48,8 +48,8 @@ This is currently screwed up...
 
 ]]--
 
----@class CombineUnloadAIDriver : TriggerAIDriver
-CombineUnloadAIDriver = CpObject(TriggerAIDriver)
+---@class CombineUnloadAIDriver : AIDriver
+CombineUnloadAIDriver = CpObject(AIDriver)
 
 CombineUnloadAIDriver.safetyDistanceFromChopper = 0.75
 CombineUnloadAIDriver.targetDistanceBehindChopper = 1
@@ -92,7 +92,7 @@ CombineUnloadAIDriver.myStates = {
 --- Constructor
 function CombineUnloadAIDriver:init(vehicle)
 	courseplay.debugVehicle(11,vehicle,'CombineUnloadAIDriver:init()')
-	TriggerAIDriver.init(self, vehicle)
+	AIDriver.init(self, vehicle)
 	self.debugChannel = 4
 	self.mode = courseplay.MODE_COMBI
 	self:initStates(CombineUnloadAIDriver.myStates)

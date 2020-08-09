@@ -16,13 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
----@class GrainTransportAIDriver : TriggerAIDriver
-GrainTransportAIDriver = CpObject(TriggerAIDriver)
+---@class GrainTransportAIDriver : AIDriver
+GrainTransportAIDriver = CpObject(AIDriver)
 
 --- Constructor
 function GrainTransportAIDriver:init(vehicle)
 	courseplay.debugVehicle(11,vehicle,'GrainTransportAIDriver:init()')
-	TriggerAIDriver.init(self, vehicle)
+	AIDriver.init(self, vehicle)
 	self.mode = courseplay.MODE_GRAIN_TRANSPORT
 	-- just for backwards compatibility
 end
@@ -34,7 +34,7 @@ end
 
 function GrainTransportAIDriver:start(startingPoint)
 	self.vehicle:setCruiseControlMaxSpeed(self.vehicle:getSpeedLimit() or math.huge)
-	TriggerAIDriver.start(self, startingPoint)
+	AIDriver.start(self, startingPoint)
 	self:setDriveUnloadNow(false);
 	self.vehicle.cp.siloSelectedFillType = FillType.UNKNOWN
 end
@@ -69,7 +69,11 @@ function GrainTransportAIDriver:drive(dt)
 		self:clearInfoText('NO_SELECTED_FILLTYPE')
 		
 		if self:isNearFillPoint() then
-			self:activateLoadingTriggerWhenAvailable()
+			self.triggerHandler:enableFillTypeLoading()
+			self.triggerHandler:disableFillTypeUnloading()
+		else 
+			self.triggerHandler:enableFillTypeUnloading()
+			self.triggerHandler:disableFillTypeLoading()
 		end
 			-- TODO: are these checks really necessary?
 		if self.vehicle.cp.totalFillLevel ~= nil
@@ -84,19 +88,10 @@ function GrainTransportAIDriver:drive(dt)
 	end
 	
 	-- TODO: clean up the self.allowedToDrives above and use a local copy
-	if self.state == self.states.STOPPED or not allowedToDrive then
+	if self.state == self.states.STOPPED or not allowedToDrive or self.triggerHandler:isLoading() or self.triggerHandler:isUnloading() then
 		self:hold()
 	end
-	
-	if self:isLoading() then
-		self:checkFilledUnitFillPercantage()
-		if self.fillableObject and self.fillableObject.object and self.fillableObject.fillUnitIndex then
-			local fillLevel = self.fillableObject.object:getFillUnitFillLevel(self.fillableObject.fillUnitIndex)
-			local fillCapacity = self.fillableObject.object:getFillUnitCapacity(self.fillableObject.fillUnitIndex)
-			courseplay:setInfoText(self.vehicle, string.format("COURSEPLAY_LOADING_AMOUNT;%d;%d",math.floor(fillLevel),fillCapacity))
-		end
-	end
-	
+		
 	self:updateInfoText()
 
 	if giveUpControl then
@@ -153,9 +148,9 @@ function GrainTransportAIDriver:updateLights()
 	self.vehicle:setBeaconLightsVisibility(false)
 end
 
-function GrainTransportAIDriver:getCanShowDriveOnButton()
-	return self:isNearFillPoint()
-end
+--function GrainTransportAIDriver:getCanShowDriveOnButton()
+--	return self:isNearFillPoint()
+--end
 
 function GrainTransportAIDriver:decrementRunCounter()
 	local fillLevelInfo = {}
@@ -163,23 +158,39 @@ function GrainTransportAIDriver:decrementRunCounter()
 	self:getSiloSelectedFillTypeSetting():decrementRunCounterByFillType(fillLevelInfo)
 end
 
-function GrainTransportAIDriver:isLoadingTriggerCallbackEnabled()
-	return true
-end
 
 function GrainTransportAIDriver:getSiloSelectedFillTypeSetting()
 	return self.vehicle.cp.settings.siloSelectedFillTypeGrainTransportDriver
 end
 
-function GrainTransportAIDriver:checkTriggerMinStartFillLevel(minFillPercentage,objectFillCapacity,triggerFillLevel)
-	local neededFillLevel = minFillPercentage*objectFillCapacity*0.01
-	if neededFillLevel <= triggerFillLevel then
-		return true
+function GrainTransportAIDriver:getAllFillLevels(object, fillLevelInfo)
+	-- get own fill levels
+	if object.getFillUnits then
+		for _, fillUnit in pairs(object:getFillUnits()) do
+			local fillType = self:getFillTypeFromFillUnit(fillUnit)
+			local fillTypeName = g_fillTypeManager:getFillTypeNameByIndex(fillType)
+			self:debugSparse('%s: Fill levels: %s: %.1f/%.1f', object:getName(), fillTypeName, fillUnit.fillLevel, fillUnit.capacity)
+			if not fillLevelInfo[fillType] then fillLevelInfo[fillType] = {fillLevel=0, capacity=0} end
+			fillLevelInfo[fillType].fillLevel = fillLevelInfo[fillType].fillLevel + fillUnit.fillLevel
+			fillLevelInfo[fillType].capacity = fillLevelInfo[fillType].capacity + fillUnit.capacity
+		end
+	end
+ 	-- collect fill levels from all attached implements recursively
+	for _,impl in pairs(object:getAttachedImplements()) do
+		self:getAllFillLevels(impl.object, fillLevelInfo)
 	end
 end
 
-function GrainTransportAIDriver:checkRunCounterAllowed(runCounter)
-	if runCounter>0 then
-		return true
+function GrainTransportAIDriver:getFillTypeFromFillUnit(fillUnit)
+	local fillType = fillUnit.lastValidFillType or fillUnit.fillType
+	-- TODO: do we need to check more supported fill types? This will probably cover 99.9% of the cases
+	if fillType == FillType.UNKNOWN then
+		-- just get the first valid supported fill type
+		for ft, valid in pairs(fillUnit.supportedFillTypes) do
+			if valid then return ft end
+		end
+	else
+		return fillType
 	end
+
 end

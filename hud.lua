@@ -746,16 +746,6 @@ function courseplay.hud:updatePageContent(vehicle, page)
 					--AutomaticCoverHandlingSetting
 					vehicle.cp.hud.content.pages[page][line][1].text = vehicle.cp.settings.automaticCoverHandling:getLabel()
 					vehicle.cp.hud.content.pages[page][line][2].text = vehicle.cp.settings.automaticCoverHandling:getText()
-				
-				elseif entry.functionToCall == 'changeSiloFillType' then
-					--old code !!
-					if vehicle.cp.siloSelectedFillType ~= nil then 
-						self:enableButtonWithFunction(vehicle,page, 'changeSiloFillType')
-						vehicle.cp.hud.content.pages[page][line][1].text = courseplay:loc('COURSEPLAY_FARM_SILO_FILL_TYPE');
-						vehicle.cp.hud.content.pages[page][line][2].text = g_fillTypeManager:getFillTypeByIndex(vehicle.cp.siloSelectedFillType).title
-					else
-						self:disableButtonWithFunction(vehicle,page, 'changeSiloFillType')
-					end
 				elseif string.find(entry.functionToCall, "siloSelectedFillType") then 
 					--SiloSelectedFillTypeSetting
 					if string.find(entry.functionToCall, "GrainTransportDriver") then 
@@ -1012,7 +1002,7 @@ function courseplay.hud:updatePageContent(vehicle, page)
 				elseif entry.functionToCall == 'setDriveNow' then
 					if not vehicle.cp.isRecording and not vehicle.cp.recordingIsPaused then
 						if vehicle.cp.driver and vehicle.cp.driver.getCanShowDriveOnButton then
-							if vehicle:getIsCourseplayDriving() and vehicle.cp.driver:getCanShowDriveOnButton() and vehicle.cp.settings.driveUnloadNow:is(false) then
+							if vehicle:getIsCourseplayDriving() and vehicle.cp.driver:getCanShowDriveOnButton() then
 								self:enableButtonWithFunction(vehicle,page, 'setDriveNow')
 								vehicle.cp.hud.content.pages[page][line][1].text = vehicle.cp.settings.driveUnloadNow:getLabel()
 							else
@@ -2304,6 +2294,7 @@ function courseplay.hud:setAIDriverContent(vehicle)
 	self:addRowButton(vehicle,nil,'startStop', 1, 1, 1 )
 	self:addRowButton(vehicle,nil,'start_record', 1, 1, 2 )
 	self:addRowButton(vehicle,nil,'cancelWait', 1, 2, 1 )
+	self:addRowButton(vehicle,nil,'setDriveNow', 1, 2, 3 )
 	self:addRowButton(vehicle,vehicle.cp.settings.startingPoint,'next', 1, 2, 2 )
 	self:addRowButton(vehicle,vehicle.cp.settings.stopAtEnd,'toggle', 1, 3, 1 )
 	self:addSettingsRowWithArrows(vehicle,nil,'switchDriverCopy', 1, 3, 2 )
@@ -2345,7 +2336,7 @@ end
 function courseplay.hud:setGrainTransportAIDriverContent(vehicle)
 	self:debug(vehicle,"setGrainTransportAIDriverContent")
 	--page 1 driving
-	self:addRowButton(vehicle,nil,'setDriveNow', 1, 2, 3 )
+--	self:addRowButton(vehicle,nil,'setDriveNow', 1, 2, 3 )
 	--page 3 
 	self:enablePageButton(vehicle, 3)
 	self:addSettingsRowWithArrows(vehicle,vehicle.cp.settings.refillUntilPct,'changeByX', 3, 1, 1 )
@@ -2401,7 +2392,7 @@ end
 function courseplay.hud:setUnloadableFieldworkAIDriverContent(vehicle)
 	self:debug(vehicle,"setUnloadableFieldworkAIDriverContent")
 	
-	self:addRowButton(vehicle,nil,'forceGoToUnloadCourse', 1, 2, 3 )
+--	self:addRowButton(vehicle,nil,'forceGoToUnloadCourse', 1, 2, 3 )
 
 	self:addSettingsRow(vehicle,vehicle.cp.settings.refillUntilPct,'changeByX', 3, 5, 1 )
 	
@@ -2430,7 +2421,7 @@ function courseplay.hud:setCombineUnloadAIDriverContent(vehicle)
 	self:debug(vehicle,"setCombineUnloadAIDriverContent")
 
 	--page 1
-	self:addRowButton(vehicle,nil,'setDriveNow', 1, 2, 3 )
+--	self:addRowButton(vehicle,nil,'setDriveNow', 1, 2, 3 )
 
 	-- page 3
 	self:enablePageButton(vehicle, 3)

@@ -199,6 +199,9 @@ end;
 function courseplay:setDriveUnloadNow(vehicle, bool)
 	if vehicle then
 		vehicle.cp.settings.driveUnloadNow:set(bool)
+		if bool then 
+			vehicle.cp.driver.triggerHandler:setDriveNow()
+		end
 		courseplay.hud:setReloadPageOrder(vehicle, vehicle.cp.hud.currentPage, true);		
 	end
 end
@@ -396,30 +399,6 @@ function courseplay:changeWorkWidth(vehicle, changeBy, force, noDraw)
 	courseplay.hud:setReloadPageOrder(vehicle, vehicle.cp.hud.currentPage, true);
 	
 end;
-
-
-function courseplay:changeSiloFillType(vehicle, modifier, currentSelectedFilltype)
-	local eftl = vehicle.cp.easyFillTypeList;
-	local newVal = 1;
-	if currentSelectedFilltype and currentSelectedFilltype ~= FillType.UNKNOWN then
-		for index, fillType in ipairs(eftl) do
-			if currentSelectedFilltype == fillType then
-				newVal = index;
-			end;
-		end;
-	else
-		newVal = vehicle.cp.siloSelectedEasyFillType + modifier
-		if newVal < 1 then
-			newVal = #eftl;
-		elseif newVal > #eftl then
-			newVal = 1;
-		end
-	end;
-	vehicle.cp.siloSelectedEasyFillType = newVal;
-	vehicle.cp.siloSelectedFillType = eftl[newVal];
-
-end;
-
 
 function courseplay:toggleShowVisualWaypointsStartEnd(vehicle, force, visibilityUpdate)
 	vehicle.cp.visualWaypointsStartEnd = Utils.getNoNil(force, not vehicle.cp.visualWaypointsStartEnd);
@@ -3076,6 +3055,15 @@ function SiloSelectedFillTypeSetting:decrementRunCounterByFillType(fillLevelInfo
 	end
 end
 
+function SiloSelectedFillTypeSetting:getMaxFillLevelByFillType(fillType)
+	local totalData = self:getData()
+	for index,data in ipairs(totalData) do 
+		if data.fillType == fillType then
+			return data.maxFillLevel		
+		end
+	end
+end
+
 function SiloSelectedFillTypeSetting:decrementRunCounter(index)
 	local data = self:getDataByIndex(index)
 	if data and data.runCounter then 
@@ -3347,16 +3335,16 @@ function StreetSpeedSetting:init(vehicle)
 	
 end
 
----@class BunkerSpeedSetting : SpeedSetting
+---@class CrawlSpeedSetting : SpeedSetting
 CrawlSpeedSetting = CpObject(SpeedSetting)
-function BunkerSpeedSetting:init(vehicle)
+function CrawlSpeedSetting:init(vehicle)
 	SpeedSetting.init(self, 'crawlSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
 	
 end
 
----@class BunkerSpeedSetting : SpeedSetting
-BunkerSpeedSetting = CpObject(SpeedSetting)
-function BunkerSpeedSetting:init(vehicle)
+---@class DischargeSpeedSetting : SpeedSetting
+DischargeSpeedSetting = CpObject(SpeedSetting)
+function DischargeSpeedSetting:init(vehicle)
 	SpeedSetting.init(self, 'dischargeSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
 	
 end
@@ -3372,16 +3360,16 @@ function BunkerSpeedSetting:validateCurrentValue()
 
 end
 
----@class BunkerSpeedSetting : SpeedSetting
-BunkerSpeedSetting = CpObject(SpeedSetting)
-function BunkerSpeedSetting:init(vehicle)
+---@class ApproachSpeedSetting : SpeedSetting
+ApproachSpeedSetting = CpObject(SpeedSetting)
+function ApproachSpeedSetting:init(vehicle)
 	SpeedSetting.init(self, 'approachSpeed','COURSEPLAY_MODE10_MAX_BUNKERSPEED', 'COURSEPLAY_MODE10_MAX_BUNKERSPEED', vehicle,3,20) 
 	
 end
 
 	-- speed limits
 
-
+--[[
 	self.cp.speeds = {
 		reverse =  6;
 		turn =   10;
@@ -3398,7 +3386,7 @@ end
 		minStreet = 3;
 		max = self:getCruiseControlMaxSpeed() or 60;
 	};
-
+]]--
 
 --- Container for settings
 --- @class SettingsContainer
