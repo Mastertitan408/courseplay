@@ -702,7 +702,7 @@ function courseplay.hud:updatePageContent(vehicle, page)
 					end
 				
 				elseif entry.functionToCall == 'cancelWait' then
-						if vehicle.cp.driver and (vehicle:getIsCourseplayDriving() and vehicle.cp.driver.isWaiting and vehicle.cp.driver:isWaiting() or vehicle.cp.driver.isLoading and vehicle.cp.driver:isLoading() and vehicle.cp.driver:is_a(FillableFieldworkAIDriver)) then
+						if vehicle.cp.driver and vehicle:getIsCourseplayDriving() and vehicle.cp.driver.isWaiting and vehicle.cp.driver:isWaiting() then
 							self:enableButtonWithFunction(vehicle,page, 'cancelWait')
 							vehicle.cp.hud.content.pages[page][line][1].text = courseplay:loc('COURSEPLAY_CONTINUE')
 						else
@@ -1001,7 +1001,7 @@ function courseplay.hud:updatePageContent(vehicle, page)
 				--TODO: setDriveNow and forceGoToUnloadCourse should be same !! 
 				elseif entry.functionToCall == 'setDriveNow' then
 					if not vehicle.cp.isRecording and not vehicle.cp.recordingIsPaused then
-						if vehicle.cp.driver and vehicle.cp.driver.getCanShowDriveOnButton then
+						if vehicle.cp.driver and vehicle.cp.driver.getCanShowDriveOnButton and not vehicle.cp.driver:isWaiting() then
 							if vehicle:getIsCourseplayDriving() and vehicle.cp.driver:getCanShowDriveOnButton() then
 								self:enableButtonWithFunction(vehicle,page, 'setDriveNow')
 								vehicle.cp.hud.content.pages[page][line][1].text = vehicle.cp.settings.driveUnloadNow:getLabel()

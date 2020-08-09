@@ -75,22 +75,22 @@ function TriggerHandler:registerListeners(triggerListener,stateChangedFunc)
 	self.stateChangedFunc = stateChangedFunc
 end
 
-function TriggerHandler:onStateChanged()
-	local speedState = self.driver.states.NOTHING
-	if self:isLoading() or self:isUnloading() then 
-		speedState = self.driver.states.HOLD
-	end
-	if self:isInTrigger() then 
-		speedState = self.isInAugerWagonTrigger and self.driver.states.APPROACH_AUGER_TRIGGER or self.driver.states.APPROACH
-	end
+--function TriggerHandler:onStateChanged()
+--	local speedState = self.driver.states.NOTHING
+--	if self:isLoading() or self:isUnloading() then 
+--		speedState = self.driver.states.HOLD
+--	end
+--	if self:isInTrigger() then 
+--		speedState = self.isInAugerWagonTrigger and self.driver.states.APPROACH_AUGER_TRIGGER or self.driver.states.APPROACH
+--	end
 
 	
-	if self.triggerListener then 
-		if self.stateChangedFunc then
-			self.triggerListener[self.stateChangedFunc](self.triggerListener, speedState,self.fillableObject)
-		end
-	end
-end 
+--	if self.triggerListener then 
+--		if self.stateChangedFunc then
+--			self.triggerListener[self.stateChangedFunc](self.triggerListener, speedState,self.fillableObject)
+--		end
+--	end
+--end 
 
 function TriggerHandler:changeLoadingState(newState)
 	if newState ~= self.loadingState then 
@@ -172,20 +172,20 @@ end
 -- end
 
 --TODO might change this one 
-function TriggerHandler:levelDidNotChange(fillLevelPercent)
-	--fillLevel changed in last loop-> start timer
-	if self.prevFillLevelPct == nil or self.prevFillLevelPct ~= fillLevelPercent then
-		self.prevFillLevelPct = fillLevelPercent
-		courseplay:setCustomTimer(self.vehicle, "fillLevelChange", 3)
-	end
-	--if time is up and no fillLevel change happend, return true
-	if courseplay:timerIsThrough(self.vehicle, "fillLevelChange",false) then
-		if self.prevFillLevelPct == fillLevelPercent then
-			return true
-		end
-		courseplay:resetCustomTimer(self.vehicle, "fillLevelChange",nil)
-	end
-end
+-- function TriggerHandler:levelDidNotChange(fillLevelPercent)
+	-- --fillLevel changed in last loop-> start timer
+	-- if self.prevFillLevelPct == nil or self.prevFillLevelPct ~= fillLevelPercent then
+		-- self.prevFillLevelPct = fillLevelPercent
+		-- courseplay:setCustomTimer(self.vehicle, "fillLevelChange", 3)
+	-- end
+	-- --if time is up and no fillLevel change happend, return true
+	-- if courseplay:timerIsThrough(self.vehicle, "fillLevelChange",false) then
+		-- if self.prevFillLevelPct == fillLevelPercent then
+			-- return true
+		-- end
+		-- courseplay:resetCustomTimer(self.vehicle, "fillLevelChange",nil)
+	-- end
+-- end
 
 function TriggerHandler:getSiloSelectedFillTypeData()
 	if self.siloSelectedFillTypeSetting then
@@ -211,6 +211,7 @@ function TriggerHandler:setLoadingState(object,fillUnitIndex,fillType,trigger)
 	if not self:isDriveNowActivated() and not self:isLoading() then
 		self:changeLoadingState(self.states.IS_LOADING)
 	end
+	self.driver:refreshHUD()
 end
 
 
@@ -228,7 +229,7 @@ function TriggerHandler:resetLoadingState()
 		self:changeLoadingState(self.states.APPROACH_TRIGGER)
 	end
 	self.augerTriggerSpeed=nil
-	--self.fillableObject = nil
+	self.fillableObject = nil
 end
 
 --Driver set to wait while unloading
@@ -243,6 +244,7 @@ function TriggerHandler:setUnloadingState(object)
 	if not self:isDriveNowActivated() then
 		self:changeLoadingState(self.states.IS_UNLOADING)
 	end
+	self.driver:refreshHUD()
 end
 
 --Driver stops unloading 
@@ -250,7 +252,7 @@ function TriggerHandler:resetUnloadingState()
 	if not self:isDriveNowActivated() then
 		self:changeLoadingState(self.states.NOTHING)
 	end
-	--self.fillableObject = nil
+	self.fillableObject = nil
 end
 
 function TriggerHandler:enableTriggerSpeed(lastTriggerID,isInAugerWagonTrigger)

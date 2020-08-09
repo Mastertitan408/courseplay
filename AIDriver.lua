@@ -182,14 +182,14 @@ function AIDriver:init(vehicle)
 	self:initStates(AIDriver.myTriggerHandlerSpeedStates)
 	self.triggerHandlerSpeedState = self.states.NOTHING
 	self.triggerHandler = TriggerHandler(self.vehicle,self:getSiloSelectedFillTypeSetting())
-	self.triggerHandler:registerListeners(self, 'onTriggerHandlerStateChanged')
+	--self.triggerHandler:registerListeners(self, 'onTriggerHandlerStateChanged')
 	self.triggerHandler:enableFuelLoading()
 end
 
-function AIDriver:onTriggerHandlerStateChanged(speedState,fillableObject)
-	self.triggerHandlerSpeedState = speedState
-	self.fillableObject = fillableObject
-end
+--function AIDriver:onTriggerHandlerStateChanged(speedState,fillableObject)
+--	self.triggerHandlerSpeedState = speedState
+--	self.fillableObject = fillableObject
+--end
 
 function AIDriver:updateLoadingText()
 	local fillableObject = self.triggerHandler.fillableObject
@@ -411,7 +411,9 @@ function AIDriver:driveCourse(dt)
 --	if not courseplay:checkFuel(self.vehicle, lx, lz, true) then
 --		self:hold()
 --	end
-	self:checkFuel()
+	if not self:checkFuel() then 
+		self:hold()
+	end
 	if not self:getIsEngineReady() then
 		if self:getSpeed() > 0 and self.allowedToDrive then
 			self:startEngineIfNeeded()
@@ -1845,6 +1847,20 @@ end
 
 function AIDriver:checkFuel()
 	--override
+	local allowedToDrive = true
+	if self.vehicle.getConsumerFillUnitIndex ~= nil then
+		local dieselIndex = self.vehicle:getConsumerFillUnitIndex(FillType.DIESEL)
+		local currentFuelPercentage = self.vehicle:getFillUnitFillLevelPercentage(dieselIndex) * 100;
+		if currentFuelPercentage < 5 then
+			allowedToDrive = false;
+			CpManager:setGlobalInfoText(vehicle, 'FUEL_MUST');
+		elseif currentFuelPercentage < 20 then
+			CpManager:setGlobalInfoText(vehicle, 'FUEL_SHOULD');
+		elseif currentFuelPercentage < 99.99 then
+		--	CpManager:setGlobalInfoText(vehicle, 'FUEL_IS');
+		end;
+	end
+	return allowedToDrive;
 end
 
 function AIDriver:getSiloSelectedFillTypeSetting()
