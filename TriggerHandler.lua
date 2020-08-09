@@ -46,7 +46,7 @@ end
 
 function TriggerHandler:onUpdate()
 	if not self:isDriveNowActivated() and not self:isStopped() then
-		if self.validFillTypeLoading or self.validFuelLoading and self:checkFuel() then
+		if self.validFillTypeLoading or self.validFuelLoading and self:needsFuel() then
 			self:updateLoadingTriggers()
 		end
 	end
@@ -251,41 +251,6 @@ function TriggerHandler:resetUnloadingState()
 	--self.fillableObject = nil
 end
 
---countTriggerUp/countTriggerDown used to check current Triggers
-function TriggerHandler:countTriggerUp(triggerId,object)
-	if object and triggerId then
-		if self.triggers[triggerId] == nil then
-			self.triggers[triggerId] = {}
-		end
-		self.triggers[triggerId][object]=true
-	end
-	self:enableTriggerSpeed()
-end
-
-function TriggerHandler:countTriggerDown(triggerId,object)
-	if object and triggerId then
-		if self.triggers[triggerId] and self.triggers[triggerId][object] then
-			self.triggers[triggerId][object]=nil
-			for triggerId,data in pairs(self.triggers) do 
-				local hasObject = false
-				for object,bool in pairs(data) do 
-					if bool then
-						hasObject = true
-						break
-					end
-				end
-				if not hasObject then
-				--	self.triggers[triggerId] = nil
-					table.remove(self.triggers,triggerId)
-				end
-			end
-		end
-		if not self:isInTrigger() then 
-			self:disableTriggerSpeed()
-		end
-	end 
-end
-
 function TriggerHandler:enableTriggerSpeed(lastTriggerID,isInAugerWagonTrigger)
 	self.isInAugerWagonTrigger = isInAugerWagonTrigger and true or nil
 	if (not self:isDriveNowActivated() or lastTriggerID ~= self.lastTriggerID )and not self:isLoading() and not self:isUnloading() then 
@@ -347,11 +312,6 @@ function TriggerHandler:needsFuel()
 	if searchForFuel then 
 		return true
 	end
-end
-
-function TriggerHandler:checkFuel()
-	self:activateLoadingTriggerWhenAvailable()
-	self:activateFillTriggersWhenAvailable(self.vehicle)
 end
 
 --Trigger stuff
@@ -428,8 +388,10 @@ function TriggerHandler:activateUnloadingTriggerWhenAvailable(object)
 						if not object:getFillUnitFillType(currentDischargeNode.fillUnitIndex) or self:isDriveNowActivated() then 
 							return
 						end
-						spec:setDischargeState(Dischargeable.DISCHARGE_STATE_OBJECT)				
-						self:setUnloadingState(object,currentDischargeNode.fillUnitIndex,spec:getDischargeFillType(currentDischargeNode))
+						if spec.setDischargeState then
+							spec:setDischargeState(Dischargeable.DISCHARGE_STATE_OBJECT)				
+							self:setUnloadingState(object,currentDischargeNode.fillUnitIndex,spec:getDischargeFillType(currentDischargeNode))
+						end
 					end
 				end
 			end
@@ -487,7 +449,7 @@ end
 
 function TriggerHandler:isMinFillLevelReached(object,fillUnitIndex,triggerFillLevel,minFillLevelPercentage)
 	local objectFillCapacity = object:getFillUnitCapacity(fillUnitIndex)
-	local minNeededFillLevel = minFillLevelPercentage and minFillLevelPercentage*0.01*objectFillCapacity or 0
+	local minNeededFillLevel = minFillLevelPercentage and minFillLevelPercentage*0.01*objectFillCapacity or 1
 	return triggerFillLevel and triggerFillLevel > minNeededFillLevel or triggerFillLevel == nil
 end
 
@@ -581,7 +543,7 @@ function TriggerHandler:onActivateObject(superFunc,vehicle,callback)
 						if self.fillTypes == nil or self.fillTypes[fillTypeIndex] then
 							if fillableObject:getFillUnitAllowsFillType(fillUnitIndex, fillTypeIndex) and fillTypeIndex == data.fillType then
 								if triggerHandler:canLoadFillType(fillableObject,fillUnitIndex,data.maxFillLevel) then 
-									if triggerHandler:isMinFillLevelReached(fillableObject,fillUnitIndex,triggerFillLevel,data.minFillLevel) then 
+									if triggerHandler:isMinFillLevelReached(fillableObject,fillUnitIndex,fillLevel,data.minFillLevel) then 
 										if triggerHandler:isRunCounterValid(data.runCounter) then 
 											--waiting for cover to be open
 											if fillableObject.spec_cover and fillableObject.spec_cover.isDirty then 
@@ -619,7 +581,7 @@ function TriggerHandler:onActivateObject(superFunc,vehicle,callback)
 					if fillTypeIndex == FillType.DIESEL  then 
 						if fillableObject:getFillUnitAllowsFillType(fillUnitIndex, fillTypeIndex) then
 							if triggerHandler:canLoadFillType(fillableObject,fillUnitIndex) then 
-								if triggerHandler:isMinFillLevelReached(fillableObject,fillUnitIndex,triggerFillLevel) then 
+								if triggerHandler:isMinFillLevelReached(fillableObject,fillUnitIndex,fillLevel) then 
 									self:onFillTypeSelection(fillTypeIndex)
 									g_currentMission.activatableObjects[self] = nil
 								else
@@ -788,9 +750,9 @@ function TriggerHandler:loadTriggerCallback(triggerId, otherId, onEnter, onLeave
 		rootVehicle = fillableObject:getRootVehicle()
 	end
 	if TriggerHandler:isAIDriverActive(rootVehicle) then
-		if rootVehicle.cp.driver.triggerHandler.validFillTypeLoading then
+	--	if rootVehicle.cp.driver.triggerHandler.validFillTypeLoading then
 			TriggerHandler:handleLoadTriggerCallback(self,triggerId, otherId, onEnter, onLeave, onStay, otherShapeId,rootVehicle,fillableObject)
-		end
+	--	end
 	end
 end
 LoadTrigger.loadTriggerCallback = Utils.appendedFunction(LoadTrigger.loadTriggerCallback,TriggerHandler.loadTriggerCallback)

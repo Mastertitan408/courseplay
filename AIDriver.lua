@@ -832,7 +832,7 @@ function AIDriver:isNearFillPoint()
 	if self.course == nil then
 		return false
 	else
-		return self.course:havePhysicallyPassedWaypoint(self:getDirectionNode(),#self.course.waypoints) and self.ppc:getCurrentWaypointIx() <= 3;
+		return self.course:havePhysicallyPassedWaypoint(self:getDirectionNode(),#self.course.waypoints) and self.ppc:getCurrentWaypointIx() <= 5;
 	end
 end
 

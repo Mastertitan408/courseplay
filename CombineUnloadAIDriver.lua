@@ -173,7 +173,9 @@ function CombineUnloadAIDriver:drive(dt)
 
 	if self.state == self.states.ON_UNLOAD_COURSE then
 		self:driveUnloadCourse(dt)
+		self.triggerHandler:enableFillTypeUnloading()
 	elseif self.state == self.states.ON_FIELD then
+		self.triggerHandler:disableFillTypeUnloading()
 		local renderOffset = self.vehicle.cp.coursePlayerNum * 0.03
 		self:renderText(0, 0.1 + renderOffset, "%s: self.onFieldState :%s", nameNum(self.vehicle), self.onFieldState.name)
 		self:driveOnField(dt)

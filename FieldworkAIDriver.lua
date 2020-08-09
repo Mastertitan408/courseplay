@@ -299,6 +299,7 @@ function FieldworkAIDriver:drive(dt)
 		self:driveUnloadOrRefill(dt)
 	elseif self.state == self.states.RETURNING_TO_FIRST_POINT then
 		self:setSpeed(self:getFieldSpeed())
+		self.triggerHandler.fillableObject = nil
 	elseif self.state == self.states.ON_UNLOAD_OR_REFILL_WITH_AUTODRIVE then
 		-- AutoDrive is driving, don't call AIDriver.drive()
 		return
