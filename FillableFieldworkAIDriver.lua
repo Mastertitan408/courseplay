@@ -85,9 +85,9 @@ function FillableFieldworkAIDriver:driveUnloadOrRefill()
 			self:fillAtWaitPoint()
 		end	
 	else
-	--	if self:isLoading() and not self.activeTriggers then 
-	--		self:fillAtWaitPoint()	
-	--	end
+		if self.triggerHandler:isLoading() then 
+			self:fillAtWaitPoint()	
+		end
 		-- just drive normally
 		self:setSpeed(self:getRecordedSpeed())
 		self:closePipeIfNeeded()
@@ -117,7 +117,7 @@ end
 function FillableFieldworkAIDriver:fillAtWaitPoint()
 	local fillLevelInfo = {}
 	self:getAllFillLevels(self.vehicle, fillLevelInfo)
-	local fillTypeData, fillTypeDataSize= self:getSiloSelectedFillTypeData()
+	local fillTypeData, fillTypeDataSize= self.triggerHandler:getSiloSelectedFillTypeData()
 	if fillTypeData == nil then
 		return
 	end
@@ -257,3 +257,5 @@ end
 function FillableFieldworkAIDriver:getSiloSelectedFillTypeSetting()
 	return self.vehicle.cp.settings.siloSelectedFillTypeFillableFieldWorkDriver
 end
+
+

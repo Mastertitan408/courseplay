@@ -58,8 +58,10 @@ function TriggerHandler:onUpdate()
 end 
 
 function TriggerHandler:onContinue()
---	self:forceStopLoading()
+	self:forceStopLoading()
 	if self:isStopped() then 
+		self:changeLoadingState(self.states.NOTHING)
+	elseif self:isLoading() or self:isUnloading() then 
 		self:changeLoadingState(self.states.NOTHING)
 	end
 end
@@ -257,6 +259,9 @@ function TriggerHandler:enableTriggerSpeed(lastTriggerID,isInAugerWagonTrigger)
 		self:changeLoadingState(self.isInAugerWagonTrigger and self.states.APPROACH_AUGER_TRIGGER or self.states.APPROACH_TRIGGER)
 	end
 	self.lastTriggerID = lastTriggerID
+	if lastTriggerID < 0 then 
+		self.lastUnloadingTriggerID = lastTriggerID*(-1)
+	end
 end
 
 function TriggerHandler:setDriveNow()
@@ -321,7 +326,7 @@ end
 function TriggerHandler:activateLoadingTriggerWhenAvailable()
 	for key, object in pairs(g_currentMission.activatableObjects) do
 		if object:getIsActivatable(self.vehicle) then
-			if object:isa(LoadTrigger) then 
+			if object:isa(LoadTrigger) and (object ~= NetworkUtil.getObject(self.lastUnloadingTriggerID) or self:isNearFillPoint()) then 
 				self:activateTriggerForVehicle(object, self.vehicle)
 				return
 			end
@@ -449,7 +454,7 @@ end
 
 function TriggerHandler:isMinFillLevelReached(object,fillUnitIndex,triggerFillLevel,minFillLevelPercentage)
 	local objectFillCapacity = object:getFillUnitCapacity(fillUnitIndex)
-	local minNeededFillLevel = minFillLevelPercentage and minFillLevelPercentage*0.01*objectFillCapacity or 1
+	local minNeededFillLevel = minFillLevelPercentage and minFillLevelPercentage*0.01*objectFillCapacity or 0.1
 	return triggerFillLevel and triggerFillLevel > minNeededFillLevel or triggerFillLevel == nil
 end
 
@@ -671,7 +676,7 @@ function TriggerHandler:setFillUnitIsFilling(superFunc,isFilling, noEventSend)
 				if triggerHandler:isAllowedToLoadFillType() then
 					for _,data in ipairs(fillTypeData) do
 						for _, trigger in ipairs(spec.fillTrigger.triggers) do
-							if trigger:getIsActivatable(self) then
+							if trigger:getIsActivatable(self) and (trigger ~= NetworkUtil.getObject(self.lastUnloadingTriggerID) or self:isNearFillPoint()) then
 								local fillType = trigger:getCurrentFillType()
 								local fillUnitIndex = nil
 								if fillType and fillType == data.fillType then

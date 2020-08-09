@@ -953,9 +953,9 @@ function FieldworkAIDriver:rememberWaypointToContinueFieldwork()
 end
 
 
-function FieldworkAIDriver:getCanShowDriveOnButton()
-	return self.state == self.states.ON_FIELDWORK_COURSE 
-end
+--function FieldworkAIDriver:getCanShowDriveOnButton()
+--	return self.state == self.states.ON_FIELDWORK_COURSE 
+--end
 
 function FieldworkAIDriver:getLoweringDurationMs()
 	return self.loweringDurationMs

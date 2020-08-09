@@ -76,11 +76,6 @@ function FieldSupplyAIDriver:drive(dt)
 		end
 		self.triggerHandler:enableFillTypeUnloading()
 		self.triggerHandler:disableFillTypeLoading()
-		-- unload into a FRC if there is one
-		--self:activateUnloadingTriggerWhenAvailable(self.vehicle)
-	--	if self.unloadingText then 
-	--		courseplay:setInfoText(self.vehicle, string.format("COURSEPLAY_UNLOADING_AMOUNT;%d;%d",math.floor(self.unloadingText.fillLevel),self.unloadingText.capacity))
-	--	end
 		--if i'm empty or fillLevel is below threshold then drive to get new stuff
 		if self:isFillLevelToContinueReached() then
 			self:continue()
@@ -168,14 +163,6 @@ end
 
 function FieldSupplyAIDriver:getSiloSelectedFillTypeSetting()
 	return self.vehicle.cp.settings.siloSelectedFillTypeFieldSupplyDriver
-end
-
-function FieldSupplyAIDriver:isOverloadingTriggerCallbackEnabled()
-	return true
-end
-
-function FieldSupplyAIDriver:isUnloadingTriggerCallbackEnabled()
-	return true
 end
 
 --Augerwagons handling
